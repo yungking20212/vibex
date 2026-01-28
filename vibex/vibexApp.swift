@@ -12,6 +12,8 @@ struct vibexApp: App {
     @State private var authManager = AuthManager.shared
     @State private var supabaseService = SupabaseService.shared
     @StateObject private var draftStore = DraftStore()
+    @State private var pendingDeepLinkURL: URL? = nil
+    @State private var showDeepLinkProfile: Bool = false
     
     var body: some Scene {
         WindowGroup {
@@ -19,6 +21,21 @@ struct vibexApp: App {
                 .environmentObject(authManager)
                 .environmentObject(supabaseService)
                 .environmentObject(draftStore)
+                .onOpenURL { url in
+                    // Lightweight filter for profile deep links
+                    let path = url.path.lowercased()
+                    if path.hasPrefix("/profile") || url.host?.lowercased() == "profile" {
+                        pendingDeepLinkURL = url
+                        showDeepLinkProfile = true
+                    }
+                }
+                .sheet(isPresented: $showDeepLinkProfile) {
+                    if let url = pendingDeepLinkURL {
+                        ProfileDeepLinkRouter(url: url)
+                    } else {
+                        EmptyView()
+                    }
+                }
                 .task {
                     await authManager.start()
                     // Initialize AI client with developer-provided base URL (no token)
