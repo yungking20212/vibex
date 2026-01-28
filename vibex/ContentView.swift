@@ -61,6 +61,9 @@ extension Notification.Name {
     static let profileShouldRefresh = Notification.Name("ProfileShouldRefresh")
     static let localLikeToggled = Notification.Name("LocalLikeToggled")
     static let localViewCounted = Notification.Name("LocalViewCounted")
+    static let deepLinkProfile = Notification.Name("DeepLinkProfile")
+    static let deepLinkVideo = Notification.Name("DeepLinkVideo")
+    static let deepLinkTab = Notification.Name("DeepLinkTab")
 }
 
 // MARK: - Root View
@@ -84,11 +87,60 @@ struct RootView: View {
     }
     
     private func handleIncoming(url: URL) {
-        guard url.host == "vibex-dlam8go0k-prnhubstudio.vercel.app" else { return }
-        let comps = url.pathComponents // ["/", "u", "username"]
-        if comps.count >= 3, comps[1] == "u" {
-            let username = comps[2]
-            NotificationCenter.default.post(name: .init("DeepLinkProfile"), object: nil, userInfo: ["username": username])
+        // Support both universal links and a custom scheme like vibex://
+        // Accept hosts for deployed domains and localhost for testing.
+        let allowedHosts: Set<String> = [
+            "vibex-omik4v3ki-prnhubstudio.vercel.app",
+            "www.vibex.app",
+            "vibex.app",
+            "localhost"
+        ]
+        let isUniversal = url.scheme == "https" || url.scheme == "http"
+        let isCustomScheme = url.scheme?.lowercased() == "vibex"
+        guard isCustomScheme || (isUniversal && (url.host.map { allowedHosts.contains($0) } ?? false)) else { return }
+
+        // Normalize path components (drop leading "/")
+        var components = url.pathComponents
+        if components.first == "/" { components.removeFirst() }
+
+        // Also support query-based fallbacks like ?u=username
+        let queryItems = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        func queryValue(_ name: String) -> String? { queryItems.first { $0.name == name }?.value }
+
+        // Routes:
+        // /u/{username} -> open profile
+        // /v/{id}       -> open video detail (or feed positioned to video)
+        // /tab/{name}   -> switch tab (feed, upload, discover, profile, ai)
+        if components.count >= 2 {
+            let route = components[0].lowercased()
+            switch route {
+            case "u":
+                let username = components[1]
+                NotificationCenter.default.post(name: .deepLinkProfile, object: nil, userInfo: ["username": username])
+            case "v":
+                let videoId = components[1]
+                NotificationCenter.default.post(name: .deepLinkVideo, object: nil, userInfo: ["id": videoId])
+            case "tab":
+                let name = components[1].lowercased()
+                NotificationCenter.default.post(name: .deepLinkTab, object: nil, userInfo: ["tab": name])
+            default:
+                break
+            }
+            return
+        }
+
+        // Query fallbacks
+        if let username = queryValue("u") {
+            NotificationCenter.default.post(name: .deepLinkProfile, object: nil, userInfo: ["username": username])
+            return
+        }
+        if let videoId = queryValue("v") {
+            NotificationCenter.default.post(name: .deepLinkVideo, object: nil, userInfo: ["id": videoId])
+            return
+        }
+        if let tab = queryValue("tab") {
+            NotificationCenter.default.post(name: .deepLinkTab, object: nil, userInfo: ["tab": tab.lowercased()])
+            return
         }
     }
 }
@@ -437,12 +489,29 @@ struct AppShellView: View {
             }
             .environment(\.tabSelection, TabSelectionBox($selectedTab))
             .tint(.white)
-            .onReceive(NotificationCenter.default.publisher(for: .init("DeepLinkProfile"))) { note in
+            .onReceive(NotificationCenter.default.publisher(for: .deepLinkProfile)) { note in
                 if let username = note.userInfo?["username"] as? String {
-                    // Switch to Profile tab immediately
                     selectedTab = .profile
-                    // Optionally, post a follow-up notification with the username if Profile needs it
                     NotificationCenter.default.post(name: .init("DeepLinkProfileUsernameReady"), object: nil, userInfo: ["username": username])
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .deepLinkTab)) { note in
+                if let tabString = note.userInfo?["tab"] as? String {
+                    switch tabString {
+                    case "feed": selectedTab = .feed
+                    case "upload": selectedTab = .upload
+                    case "discover": selectedTab = .discover
+                    case "profile": selectedTab = .profile
+                    case "ai", "aihub", "vibex ai", "vibexai": selectedTab = .aiHub
+                    default: break
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .deepLinkVideo)) { note in
+                if let videoId = note.userInfo?["id"] as? String {
+                    // Switch to feed for now; downstream views can observe this to navigate to the video.
+                    selectedTab = .feed
+                    NotificationCenter.default.post(name: .init("DeepLinkVideoReady"), object: nil, userInfo: ["id": videoId])
                 }
             }
         }
@@ -538,6 +607,10 @@ struct FeedView: View {
         .onReceive(NotificationCenter.default.publisher(for: .videoUploaded)) { _ in
             Task { await reloadFeedFromStart() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .init("DeepLinkVideoReady"))) { note in
+            guard let targetId = note.userInfo?["id"] as? String else { return }
+            Task { await handleDeepLinkedVideo(id: targetId) }
+        }
     }
     
     private func reloadFeedFromStart() async {
@@ -583,6 +656,41 @@ struct FeedView: View {
         let asset = AVURLAsset(url: url)
         asset.loadValuesAsynchronously(forKeys: ["playable"]) {
             // Primed for playback; nothing else needed here.
+        }
+    }
+
+    private func handleDeepLinkedVideo(id: String) async {
+        // If we already have the video, jump to it.
+        if let idx = videos.firstIndex(where: { $0.id == id }) {
+            await MainActor.run { currentIndex = idx }
+            return
+        }
+        // Otherwise, ensure we have some content; then try to load more until found or no more pages.
+        if videos.isEmpty {
+            await reloadFeedFromStart()
+        }
+        // Try to find by loading additional pages a few times.
+        var attempts = 0
+        while attempts < 3 {
+            if let idx = videos.firstIndex(where: { $0.id == id }) {
+                await MainActor.run { currentIndex = idx }
+                return
+            }
+            attempts += 1
+            await loadMoreIfNeeded()
+        }
+        // As a last resort, try to fetch the single video by id if the service supports it and insert at front.
+        do {
+            if let svc = service as AnyObject as? (any SingleVideoProviding) {
+                if let video = try await svc.fetchVideo(byId: id) {
+                    await MainActor.run {
+                        videos.insert(video, at: 0)
+                        currentIndex = 0
+                    }
+                }
+            }
+        } catch {
+            print("[DeepLink] Failed to fetch single video: \(error)")
         }
     }
 }
@@ -1433,7 +1541,7 @@ struct DiscoverUserPreviewSheet: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             
             Button {
-                let base = "https://vibex-dlam8go0k-prnhubstudio.vercel.app"
+                let base = "https://vibex-omik4v3ki-prnhubstudio.vercel.app"
                 if let url = URL(string: base + "/u/\(user.username)") {
                     let av = UIActivityViewController(activityItems: [url], applicationActivities: nil)
                     UIApplication.shared.windows.first?.rootViewController?.present(av, animated: true)
@@ -1462,6 +1570,9 @@ struct DiscoverUserPreviewSheet: View {
 
 @MainActor
 struct ProfileView: View {
+    // Optional parameters for deep-linking into another user's profile
+    let userID: String? = nil
+    let username: String? = nil
     
     @EnvironmentObject var service: SupabaseService
     @EnvironmentObject var authManager: AuthManager
@@ -1504,7 +1615,7 @@ struct ProfileView: View {
     }
     
     private func profileShareURL(for username: String) -> URL? {
-        let base = "https://vibex-dlam8go0k-prnhubstudio.vercel.app"
+        let base = "https://vibex-omik4v3ki-prnhubstudio.vercel.app"
         // Compose a canonical path like /u/{username}
         var comps = URLComponents(string: base)
         comps?.path = "/u/\(username)"
@@ -1609,7 +1720,7 @@ struct ProfileView: View {
                 if let url = profileShareURL(for: username) {
                     ShareSheet(items: [url])
                 } else {
-                    ShareSheet(items: ["Check out my VibeX profile: https://vibex-dlam8go0k-prnhubstudio.vercel.app/u/\(username)"])
+                    ShareSheet(items: ["Check out my VibeX profile: https://vibex-omik4v3ki-prnhubstudio.vercel.app/u/\(username)"])
                 }
             }
         }
@@ -1635,7 +1746,9 @@ struct ProfileView: View {
 
     private func loadUserVideos() async {
         do {
-            if let userId = authManager.currentUserId?.uuidString {
+            // If a target userID is provided (deep link), use it; otherwise use current user
+            let targetUserId = userID ?? authManager.currentUserId?.uuidString
+            if let userId = targetUserId {
                 if let svc = service as AnyObject as? (any ProfileVideosProviding) {
                     let vids = try await svc.fetchUserVideos(userId: userId)
                     await MainActor.run { self.userVideos = vids }
@@ -1653,7 +1766,8 @@ struct ProfileView: View {
 
     private func loadLikedVideos() async {
         do {
-            if let userId = authManager.currentUserId?.uuidString {
+            let targetUserId = userID ?? authManager.currentUserId?.uuidString
+            if let userId = targetUserId {
                 if let svc = service as AnyObject as? (any ProfileLikesProviding) {
                     let vids = try await svc.fetchLikedVideos(userId: userId)
                     await MainActor.run { self.likedVideos = vids }
@@ -1666,7 +1780,8 @@ struct ProfileView: View {
 
     private func loadSavedVideos() async {
         do {
-            if let userId = authManager.currentUserId?.uuidString {
+            let targetUserId = userID ?? authManager.currentUserId?.uuidString
+            if let userId = targetUserId {
                 if let svc = service as AnyObject as? (any ProfileSavedProviding) {
                     let vids = try await svc.fetchSavedVideos(userId: userId)
                     await MainActor.run { self.savedVideos = vids }
@@ -1689,7 +1804,8 @@ struct ProfileView: View {
 
     // Break up large body for faster type checking
     private var profileHeader: some View {
-        let username = authManager.profile?.username ?? "username"
+        // If the view was created with a `username` param (deep link), prefer that
+        let displayUsername = username ?? authManager.profile?.username ?? "username"
         let displayName = authManager.profile?.display_name
         let avatarURLString = authManager.profile?.avatar_url
 
@@ -1713,7 +1829,7 @@ struct ProfileView: View {
                 PhotosPicker(selection: $selectedAvatarItem, matching: .images, photoLibrary: .shared()) {
                     AvatarPickerContent(
                         avatarURLString: avatarURLString,
-                        username: username,
+                        username: displayUsername,
                         isUploadingAvatar: isUploadingAvatar
                     )
                 }
@@ -1791,7 +1907,7 @@ struct ProfileView: View {
                 .padding(.bottom, 16)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("@\(username)")
+                    Text("@\(displayUsername)")
                         .font(.title2).bold()
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -2279,6 +2395,10 @@ fileprivate protocol ProfileLikesProviding {
 
 fileprivate protocol ProfileSavedProviding {
     func fetchSavedVideos(userId: String) async throws -> [VideoPost]
+}
+
+fileprivate protocol SingleVideoProviding {
+    func fetchVideo(byId id: String) async throws -> VideoPost?
 }
 
 #Preview {

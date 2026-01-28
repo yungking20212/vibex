@@ -61,7 +61,7 @@ struct vibexApp: App {
                     await CacheCleaner.performMaintenanceIfNeeded(maxDiskUsage: 150 * 1024 * 1024)
                 }
             }
-            .onChange(of: scenePhase) { oldPhase, newPhase in
+            .onChange(of: scenePhase) { newPhase in
                 switch newPhase {
                 case .active:
                     // Resume or refresh tasks as needed
