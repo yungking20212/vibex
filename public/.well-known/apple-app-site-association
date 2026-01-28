@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [ "YX28KZ28AJ.com.vibex" ],
+        "components": [
+          { "/": "/u/*" }
+        ]
+      }
+    ]
+  }
+}

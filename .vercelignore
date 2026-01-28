@@ -1,0 +1,21 @@
+# Ignore Xcode, build artifacts, node_modules and large assets
+.vscode
+.vs
+.DS_Store
+DerivedData/
+.vim/
+*.xcuserdata
+*.xcworkspace
+*.xcodeproj/project.xcworkspace
+*.xcdebugger
+build/
+.venv/
+node_modules/
+.vite/
+dist/
+**/Pods/
+**/Carthage/
+**/*.xcarchive
+*.app
+*.ipa
+*.dSYM

@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "background": "#0A0B1D",
+    "purple": "#7B2FF7",
+    "pink": "#FF3CAC",
+    "blue": "#2B8CFF",
+    "accentText": "#FFFFFF",
+    "glow": "#FFFFFF1A"
+  },
+  "themes": {
+    "neon": {
+      "background": "#0A0B1D",
+      "purple": "#7B2FF7",
+      "pink": "#FF3CAC",
+      "blue": "#2B8CFF",
+      "glowStrength": "high",
+      "shadows": {
+        "purple": "rgba(123,47,247,0.30)",
+        "pink": "rgba(255,60,172,0.22)",
+        "blue": "rgba(43,140,255,0.18)"
+      }
+    },
+    "luxury": {
+      "background": "#060510",
+      "purple": "#5E3ABF",
+      "pink": "#D24FB0",
+      "blue": "#1E6FD8",
+      "glowStrength": "soft",
+      "shadows": {
+        "base": "rgba(0,0,0,0.12)"
+      }
+    }
+  },
+  "ui": {
+    "cornerRadius": {
+      "card": 14,
+      "badge": 10,
+      "rounded": 12
+    },
+    "elevation": {
+      "soft": 8,
+      "medium": 18,
+      "heavy": 40
+    },
+    "typography": {
+      "title": 20,
+      "headline": 17,
+      "body": 15,
+      "caption": 12
+    }
+  }
+}

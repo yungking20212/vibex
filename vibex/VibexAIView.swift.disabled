@@ -1,0 +1,17 @@
+import SwiftUI
+import Foundation
+
+// MARK: - Vibex AI (Agent) Hub
+
+struct VibexAIView: View {
+    // File intentionally disabled: was causing compile errors due to embedded Swift code fences
+    // and nested `import` statements. Retained as a disabled placeholder.
+
+    // To restore this content as a working Swift file, create a new file named
+    // `VibexAIView.swift` and move the intended Swift code there.
+    @State private var showV2Modal: Bool = false
+
+    @State private var v2SelectedTool: AITool? = nil
+
+    @State private var showFunnyV2: Bool = false
+
