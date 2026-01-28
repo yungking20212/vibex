@@ -1,28 +1,61 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>VibeX Placeholder</title>
-    <style>
-      body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #111; padding: 3rem; }
-      main { max-width: 720px; margin: 0 auto; }
-      h1 { font-size: 1.6rem; margin-bottom: 0.5rem; }
-      p { color: #333; }
-      .meta { margin-top: 1.5rem; font-size: 0.9rem; color: #666; }
-      a.small { color: #0366d6; font-size: 0.9rem; }
-    </style>
+    <title>VibeX — Create & Share Short Videos</title>
+    <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main>
-      <h1>VibeX — placeholder public directory</h1>
-      <p>This placeholder exists so Vercel deploys the repo. Remove or replace it with your site files as needed.</p>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">VibeX</a>
+        <nav class="nav">
+          <a href="/upload.html">Upload Test</a>
+          <a href="https://vibex-tau.vercel.app" target="_blank" rel="noopener">Live</a>
+        </nav>
+      </div>
+    </header>
 
-      <div class="meta">
-        <p>If you want a quick upload test page or documentation added here, tell me and I will scaffold it into the <strong>public/</strong> directory.</p>
-        <p>Current production site: <a class="small" href="https://vibex-tau.vercel.app">https://vibex-tau.vercel.app</a></p>
-        <p><a class="small" href="/upload.html">Quick upload test page</a></p>
+    <main class="hero">
+      <div class="wrap hero-inner">
+        <div class="hero-content">
+          <h1>Create short, expressive videos — fast.</h1>
+          <p class="lede">Record, edit, and share. This is a lightweight preview homepage for the VibeX app and developer tools — use the Upload Test to exercise storage endpoints and quickly validate uploads.</p>
+
+          <div class="cta-row">
+            <a class="btn primary" href="/upload.html">Try Upload Test</a>
+            <a class="btn ghost" href="/README.md">Developer Docs</a>
+          </div>
+        </div>
+
+        <div class="hero-preview">
+          <div class="card">
+            <img alt="VibeX preview" src="/assets/placeholder-video.png" onerror="this.style.display='none'"/>
+            <div class="card-text">Upload, transcode, and serve public video objects.</div>
+          </div>
+        </div>
       </div>
     </main>
+
+    <section class="features wrap">
+      <div class="feature">
+        <h3>Simple Uploads</h3>
+        <p>Test uploads directly from the browser or from the iOS client using the presign endpoint.</p>
+      </div>
+      <div class="feature">
+        <h3>Storage + Metadata</h3>
+        <p>Store video objects in Supabase storage and insert metadata rows into the database.</p>
+      </div>
+      <div class="feature">
+        <h3>Local Dev Friendly</h3>
+        <p>Includes a developer test harness at <code>/upload.html</code> for quick end-to-end checks.</p>
+      </div>
+    </section>
+
+    <footer class="site-footer wrap">
+      <div>© VibeX — developer preview</div>
+      <div class="small-links"><a href="/upload.html">Upload Test</a> · <a href="https://github.com/yungking20212/vibex" target="_blank" rel="noopener">Source</a></div>
+    </footer>
   </body>
 </html>
