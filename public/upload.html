@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>VibeX Upload Test</title>
+    <style>body{font-family:system-ui, -apple-system,Segoe UI,Roboto,Helvetica,Arial;padding:24px;color:#111}label{display:block;margin:8px 0}button{margin-top:12px}</style>
+  </head>
+  <body>
+    <h1>Upload Test</h1>
+    <p>Choose a file and an object path (will be used as storage path). The page posts raw bytes to <code>/api/presign_upload</code>.</p>
+
+    <label>File
+      <input id="file" type="file" />
+    </label>
+
+    <label>Object path
+      <input id="path" type="text" value="uploads/test-" style="width:100%" />
+    </label>
+
+    <button id="upload">Upload</button>
+
+    <pre id="out" style="white-space:pre-wrap;margin-top:12px;color:#222"></pre>
+
+    <script>
+      async function log(v){ document.getElementById('out').textContent = typeof v === 'string' ? v : JSON.stringify(v,null,2) }
+      document.getElementById('upload').addEventListener('click', async ()=>{
+        const fi = document.getElementById('file')
+        if(!fi.files.length){ return log('pick a file') }
+        const file = fi.files[0]
+        const pathBase = document.getElementById('path').value || 'uploads/test-'
+        const objectPath = pathBase + Date.now() + '-' + file.name
+
+        log('Uploading ' + file.name + ' → ' + objectPath)
+
+        try{
+          const body = await file.arrayBuffer()
+          const res = await fetch('/api/presign_upload', {
+            method: 'POST',
+            headers: {
+              'x-object-path': objectPath,
+              'content-type': file.type || 'application/octet-stream'
+            },
+            body
+          })
+          const json = await res.json()
+          if(!res.ok) throw json
+          log(json)
+        }catch(err){ log(err && err.message ? err.message : err) }
+      })
+    </script>
+  </body>
+</html>
