@@ -6,5 +6,18 @@
     <string>vibex</string>
     <key>SUPABASE_ANON_KEY</key>
     <string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impua3piZnFyd2tnZml5eHZ3cnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NDQ0NDgsImV4cCI6MjA4NDAyMDQ0OH0.20qAetWuXPOeA_fcflj_wdx_-mwKlHIszVvgEwa8sZo</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>vibex</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>vibex</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
