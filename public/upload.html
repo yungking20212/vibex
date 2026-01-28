@@ -3,6 +3,101 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>VibeX — Upload Test</title>
+    <style>
+      body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color: #111; padding: 2rem; }
+      main { max-width: 720px; margin: 0 auto; }
+      h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+      label { display:block; margin-top: 0.75rem; }
+      input[type=text] { width:100%; padding:0.5rem; }
+      button { margin-top: 0.75rem; padding:0.5rem 0.75rem; }
+      pre { background:#f6f8fa; padding:0.75rem; border-radius:6px; overflow:auto }
+      a.small { color: #0366d6; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Upload Test</h1>
+      <p>Use this page to POST a file to <code>/api/presign_upload</code> and view the response.</p>
+
+      <label>File
+        <input id="fileInput" type="file" />
+      </label>
+
+      <label>Object path (optional)
+        <input id="pathInput" type="text" placeholder="videos/{timestamp}_{filename} — leave empty to auto-generate" />
+      </label>
+
+      <button id="uploadBtn">Upload</button>
+      <p style="margin-top:0.5rem;"><a class="small" href="/">Back to placeholder</a></p>
+
+      <h3>Result</h3>
+      <pre id="status">idle</pre>
+      <p id="linkContainer" style="display:none;"><a id="objectLink" href="#" target="_blank">Open uploaded object</a></p>
+    </main>
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+      const pathInput = document.getElementById('pathInput');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const status = document.getElementById('status');
+      const linkContainer = document.getElementById('linkContainer');
+      const objectLink = document.getElementById('objectLink');
+
+      function appendStatus(msg){ status.textContent = msg; }
+
+      uploadBtn.addEventListener('click', async ()=>{
+        const f = fileInput.files[0];
+        if(!f){ appendStatus('Select a file first'); return; }
+        const userPath = pathInput.value.trim();
+        const generated = `videos/${Date.now()}_${f.name}`;
+        const objectPath = userPath || generated;
+
+        try{
+          appendStatus('Reading file...');
+          const arrayBuffer = await f.arrayBuffer();
+          appendStatus('Uploading...');
+
+          const res = await fetch('/api/presign_upload', {
+            method: 'POST',
+            headers: {
+              'x-object-path': objectPath,
+              'Content-Type': f.type || 'application/octet-stream'
+            },
+            body: arrayBuffer
+          });
+
+          const text = await res.text();
+          appendStatus(`HTTP ${res.status}\n\n${text}`);
+
+          if(res.ok){
+            // try parse JSON for a public URL
+            try{
+              const json = JSON.parse(text);
+              if(json.publicURL){
+                objectLink.href = json.publicURL;
+                objectLink.textContent = json.publicURL;
+                linkContainer.style.display = 'block';
+              } else if(json.path){
+                objectLink.href = json.path;
+                objectLink.textContent = json.path;
+                linkContainer.style.display = 'block';
+              }
+            }catch(e){}
+          }
+
+        }catch(err){
+          appendStatus('Upload failed: ' + (err.message||err));
+        }
+      });
+    </script>
+  </body>
+</html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>VibeX Upload Test</title>
     <style>body{font-family:system-ui, -apple-system,Segoe UI,Roboto,Helvetica,Arial;padding:24px;color:#111}label{display:block;margin:8px 0}button{margin-top:12px}</style>
   </head>
