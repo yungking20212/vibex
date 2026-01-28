@@ -23,8 +23,13 @@
           <p class="lede">Coming soon to iOS — record, edit, and share short, expressive videos. Sign up to join the beta and be the first to try the app.</p>
 
           <div class="cta-row">
-            <a class="btn primary" href="#" onclick="location.href='mailto:beta@vibex.app?subject=VibeX%20Beta%20Request'">Request Beta</a>
+            <a class="btn primary" href="#signup" id="jumpSignup">Request Beta</a>
             <a class="btn ghost" href="#" onclick="alert('TestFlight link coming soon — we\'ll notify you.')">Notify Me</a>
+          </div>
+
+          <div class="store-badges" aria-hidden="false" style="margin-top:12px">
+            <a class="badge appstore" href="#" onclick="alert('App Store page coming soon')" aria-label="Download on the App Store">Download on the App Store</a>
+            <a class="badge testflight" href="#" onclick="alert('TestFlight invites coming soon')" aria-label="Join via TestFlight">Join via TestFlight</a>
           </div>
         </div>
 
@@ -56,5 +61,46 @@
       <div>© VibeX — Coming Soon to iOS</div>
       <div class="small-links"><a href="https://github.com/yungking20212/vibex" target="_blank" rel="noopener">Source</a></div>
     </footer>
+
+    <section id="signup" class="signup-wrap wrap">
+      <div class="signup-card">
+        <h3>Join the beta</h3>
+        <p>Enter your email and we'll invite you to TestFlight when builds are ready.</p>
+        <form id="betaForm">
+          <input id="betaEmail" type="email" placeholder="you@example.com" required />
+          <input id="betaName" type="text" placeholder="Your name (optional)" />
+          <button type="submit" class="btn primary">Request Invite</button>
+        </form>
+        <div id="betaStatus" class="muted" style="margin-top:0.6rem">We respect your privacy — no spam.</div>
+      </div>
+    </section>
+
+    <script>
+      // Signup form submission
+      const betaForm = document.getElementById('betaForm');
+      const betaStatus = document.getElementById('betaStatus');
+      betaForm?.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const email = document.getElementById('betaEmail').value.trim();
+        const name = document.getElementById('betaName').value.trim();
+        betaStatus.textContent = 'Submitting...';
+        try{
+          const res = await fetch('/api/beta_signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name })
+          });
+          if(res.ok){
+            betaStatus.textContent = 'Thanks — you are on the list! We\'ll email when TestFlight opens.';
+            betaForm.reset();
+          } else {
+            const text = await res.text();
+            betaStatus.textContent = 'Error: ' + (text || res.statusText);
+          }
+        }catch(err){
+          betaStatus.textContent = 'Network error: ' + (err.message||err);
+        }
+      });
+    </script>
   </body>
 </html>

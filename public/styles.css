@@ -19,6 +19,17 @@ body{margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe
 .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#052023}
 .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
 
+.store-badges{display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem}
+.badge{display:inline-flex;align-items:center;gap:0.6rem;padding:0.45rem 0.7rem;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem}
+.badge.appstore{background:#0b1220;color:var(--accent-2);border:1px solid rgba(255,255,255,0.03)}
+.badge.testflight{background:linear-gradient(90deg,#ff9a9e,#fecfef);color:#041020}
+
+.signup-wrap{padding:2rem 1rem;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);}
+.signup-card{max-width:720px;margin:0 auto;padding:1rem;border-radius:10px;background:rgba(255,255,255,0.02)}
+.signup-card input[type=email],.signup-card input[type=text]{width:100%;padding:0.6rem;margin-top:0.5rem;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+.signup-card form{display:grid;grid-template-columns:1fr;gap:0.6rem;margin-top:0.6rem}
+.muted{color:var(--muted)}
+
 .hero-preview{width:360px;flex:0 0 360px}
 .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:0.75rem;color:var(--muted);display:flex;flex-direction:column;align-items:center}
 .card img{width:100%;height:auto;border-radius:8px;background:#041020}
